@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enchantè Apparel</title>
+    <style>
+        /* --- DESIGN STYLES --- */
+        :root { --primary: #1a1a1a; --accent: #d4af37; --light: #f4f4f4; --text: #333; }
+        body { font-family: sans-serif; margin: 0; padding: 0; background-color: var(--light); color: var(--text); padding-bottom: 50px; }
+        nav { background-color: var(--primary); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .logo { font-size: 1.2rem; font-weight: bold; color: var(--accent); text-transform: uppercase; }
+        .cart-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; }
+        .container { padding: 15px; }
+        h1 { text-align: center; font-size: 1.5rem; margin-top: 10px; }
+        .subtitle { text-align: center; color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+        
+        /* Product Grid */
+        .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .product-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .product-img { width: 100%; height: 180px; object-fit: cover; background: #ddd; }
+        .product-info { padding: 10px; }
+        .product-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; height: 35px; overflow: hidden; }
+        .product-price { color: var(--accent); font-weight: bold; font-size: 1rem; }
+        .add-btn { background-color: var(--primary); color: white; border: none; padding: 8px; border-radius: 4px; width: 100%; margin-top: 10px; font-size: 0.9rem; }
+        
+        /* Cart Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1000; }
+        .modal-content { background-color: white; margin: 10% auto; padding: 20px; width: 85%; border-radius: 8px; max-height: 80vh; overflow-y: auto; }
+        .close { float: right; font-size: 1.5rem; font-weight: bold; cursor: pointer; }
+        .checkout-box { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-top: 20px; border-left: 4px solid var(--accent); }
+        .whatsapp-btn { background-color: #25D366; color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; font-weight: bold; margin-top: 10px; font-size: 1rem; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">Enchantè</div>
+        <button class="cart-btn" onclick="toggleCart()">Cart (<span id="cart-count">0</span>)</button>
+    </nav>
+
+    <div class="container">
+        <h1>New Arrivals</h1>
+        <div class="subtitle">Touch of Elegance</div>
+        <div class="product-grid" id="product-container"></div>
+    </div>
+
+    <div id="cart-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="toggleCart()">&times;</span>
+            <h2>Your Cart</h2>
+            <div id="cart-items"></div>
+            <h3 style="text-align:right; border-top:1px solid #eee; padding-top:10px;">Total: GHS <span id="cart-total">0</span></h3>
+            
+            <div id="checkout-section" style="display:none;">
+                <div class="checkout-box">
+                    <p style="margin:0 0 10px 0;"><b>Payment Details:</b></p>
+                    <p style="margin:5px 0; font-size:0.9rem;">🟡 MTN: <b>0596221293</b></p>
+                    <p style="margin:5px 0; font-size:0.9rem;">🔴 Telecel: <b>0208404918</b></p>
+                    <hr style="border:0; border-top:1px solid #ccc; margin:15px 0;">
+                    <label><b>Your Name:</b></label>
+                    <input type="text" id="customer-name" placeholder="Enter full name">
+                    <button class="whatsapp-btn" onclick="checkoutWhatsApp()">Confirm on WhatsApp</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //      CREATOR AREA - EDIT PRODUCTS HERE
+        // ==========================================
+        
+        const products = [
+            {
+                id: 1,
+                name: "Enchantè Classic Tee",
+                price: 150,
+                image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400"
+            },
+            {
+                id: 2,
+                name: "Silk Gold Dress",
+                price: 350,
+                image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400"
+            },
+            {
+                id: 3,
+                name: "Black Urban Hoodie",
+                price: 250,
+                image: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=400"
+            },
+            {
+                id: 4,
+                name: "Summer Hat",
+                price: 80,
+                image: "https://images.unsplash.com/photo-1533827432537-70133748f5c8?w=400"
+            }
+        ];
+
+        // ==========================================
+        //      DO NOT EDIT BELOW THIS LINE
+        // ==========================================
+
+        let cart = [];
+
+        function init() {
+            const container = document.getElementById('product-container');
+            container.innerHTML = '';
+            products.forEach(p => {
+                container.innerHTML += `
+                    <div class="product-card">
+                        <img src="${p.image}" class="product-img">
+                        <div class="product-info">
+                            <div class="product-title">${p.name}</div>
+                            <div class="product-price">GHS ${p.price}</div>
+                            <button class="add-btn" onclick="addToCart(${p.id})">Add to Cart</button>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function addToCart(id) {
+            const item = products.find(p => p.id === id);
+            cart.push(item);
+            updateCart();
+            toggleCart();
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const cartDiv = document.getElementById('cart-items');
+            const totalSpan = document.getElementById('cart-total');
+            const checkoutSec = document.getElementById('checkout-section');
+            
+            if(cart.length === 0) {
+                cartDiv.innerHTML = '<p>Cart is empty.</p>';
+                checkoutSec.style.display = 'none';
+                totalSpan.innerText = '0';
+                return;
+            }
+
+            cartDiv.innerHTML = '';
+            let total = 0;
+            cart.forEach((item, index) => {
+                total += item.price;
+                cartDiv.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                        <span>${item.name}</span>
+                        <span>${item.price} <b style="color:red; margin-left:10px;" onclick="remove(${index})">x</b></span>
+                    </div>`;
+            });
+            totalSpan.innerText = total;
+            checkoutSec.style.display = 'block';
+        }
+
+        function remove(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        function toggleCart() {
+            const modal = document.getElementById('cart-modal');
+            modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function checkoutWhatsApp() {
+            const name = document.getElementById('customer-name').value;
+            if(!name) { alert("Please enter your name"); return; }
+            
+            let total = 0;
+            let list = "";
+            cart.forEach(i => { total += i.price; list += `- ${i.name} (GHS ${i.price})%0a`; });
+            
+            // Your Number
+            const url = `https://wa.me/233596221293?text=*NEW ORDER: Enchantè*%0a%0a*Customer:* ${name}%0a----------------%0a${list}----------------%0a*Total:* GHS ${total}%0a%0aPayment sent via MoMo/Telecel.`;
+            window.open(url, '_blank');
+        }
+
+        init();
+    </script>
+</body>
+</html>
